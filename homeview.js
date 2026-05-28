@@ -55,9 +55,14 @@ export function renderLayout(title, content, isAdmin = false) {
     <body>
       <nav>
         <a href="/">Home (Student View)</a> | 
-        <a href="/admin?auth=true">Admin Dashboard</a> |
-        <a href="/login">Admin Login</a>
-        ${isAdmin ? '<strong>[Logged In as Admin]</strong> <a href="/">Logout</a>' : ''}
+        
+        ${isAdmin ? `
+          <a href="/admin?auth=true">Admin Dashboard</a> | 
+          <strong>[Logged In as Admin]</strong> <a href="/">Logout</a>
+        ` : `
+          <a href="/admin">Admin Dashboard</a> | 
+          <a href="/login">Admin Login</a>
+        `}
       </nav>
       <h1>${title}</h1>
       ${content}
