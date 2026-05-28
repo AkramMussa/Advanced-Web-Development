@@ -1,0 +1,3 @@
+.deno/
+*.db
+*.db-journal
