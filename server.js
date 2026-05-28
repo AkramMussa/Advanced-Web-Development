@@ -1,6 +1,6 @@
 // server.js
 import { Application, Router } from "https://deno.land/x/oak@v12.6.1/mod.ts";
-import { showHome, handleRegister, getModulesApi } from "./controller.js";
+import { showHome, handleRegister, handleWithdraw, getModulesApi } from "./controller.js"; // Bound handleWithdraw endpoint 
 import { showAdmin, createProgramme, createModule, toggleProgramme, deleteProgramme, deleteStudent, exportMailingList } from "./admin.js";
 import { renderLayout } from "./homeview.js";
 
@@ -24,6 +24,7 @@ const authMiddleware = async (ctx, next) => {
 router.get("/", showHome);
 router.get("/api/modules/:progId", getModulesApi); 
 router.post("/register-interest", handleRegister);
+router.post("/withdraw-interest", handleWithdraw); // NEW: Student Opt-Out Action Route 
 
 // Advanced Compliant Administrative Operational Clusters
 router.get("/admin", authMiddleware, showAdmin);
@@ -34,11 +35,10 @@ router.post("/admin/delete-programme/:id", authMiddleware, deleteProgramme);
 router.post("/admin/delete-student/:id", authMiddleware, deleteStudent); 
 router.get("/admin/export-mailing-list", authMiddleware, exportMailingList); 
 
-// HARDENED LOGIN INTERFACE VIEW (SCENARIO REQUIREMENT)
-// Renders a formal credential challenge interface with username and password input elements
+// Hardened login challenge form view endpoint wrapper
 router.get("/login", (ctx) => {
   const loginFormHtml = `
-    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 400px; margin: 40px auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 400px; margin: 40px auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1 challenge-box);">
       <h2 style="text-align: center; margin-bottom: 20px;">Administrator Authentication</h2>
       
       ${ctx.request.url.searchParams.get("error") ? `
@@ -63,21 +63,15 @@ router.get("/login", (ctx) => {
   ctx.response.body = renderLayout("Admin Portal Login", loginFormHtml);
 });
 
-// POST METHOD: VERIFY CREDENTIALS
-// Validates user input parameters against hardcoded records before issuing query authentication tokens
 router.post("/login", async (ctx) => {
   const body = ctx.request.body({ type: "form" });
   const value = await body.value;
-  
   const username = value.get("username");
   const password = value.get("password");
 
-  // Hardcoded project administrative identity credentials mapping to your grading spec rules
   if (username === "admin" && password === "dmu2026") {
-    // If successful, pass the token flag right through to the secure panel view
     ctx.response.redirect("/admin?auth=true");
   } else {
-    // If the check fails, bounce them right back to the login screen with an error code flag
     ctx.response.redirect("/login?error=true");
   }
 });
