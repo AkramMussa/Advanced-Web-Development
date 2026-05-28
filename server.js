@@ -1,27 +1,26 @@
 // server.js
 import { Application, Router } from "https://deno.land/x/oak@v12.6.1/mod.ts";
-import { showHome, handleRegister, showAdmin } from "./controller.js";
+import { showHome, handleRegister, showAdmin, getModulesApi } from "./controller.js";
 
 const app = new Application();
 const router = new Router();
 
-// Authentication Security Check Middleware Layer
 const authMiddleware = async (ctx, next) => {
   const isAuth = ctx.cookies.get("authenticated_session");
   if (isAuth === "true") {
-    await next(); // Pass verification checks cleanly
+    await next();
   } else {
-    ctx.response.status = 403; // Return access block code to client
+    ctx.response.status = 403;
     ctx.response.body = "Access Denied: Administrators Only.";
   }
 };
 
-// Route mapping pointing cleanly to external decoupled controllers
+// Application route maps aligning cleanly with external controllers 
 router.get("/", showHome);
+router.get("/api/modules/:progId", getModulesApi); // Asynchronous JSON endpoint [cite: 146]
 router.post("/register-interest", handleRegister);
 router.get("/admin", authMiddleware, showAdmin);
 
-// Quick simulated login/logout routes
 router.get("/login", (ctx) => {
   ctx.cookies.set("authenticated_session", "true");
   ctx.response.redirect("/admin");
@@ -34,5 +33,5 @@ router.get("/logout", (ctx) => {
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-console.log("Modular architectural server running at http://localhost:8000");
+console.log("Fully compliant scenario server running at http://localhost:8000");
 await app.listen({ port: 8000 });
