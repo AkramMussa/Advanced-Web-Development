@@ -11,10 +11,10 @@ export function renderLayout(title, content, isAdmin = false) {
       <title>${title}</title>
       <style>
         :root { 
-          --primary: #0f172a; /* Sophisticated deep slate dark blue */
-          --accent: #0284c7;  /* High-tech clear blue accents */
+          --primary: #0f172a; 
+          --accent: #0284c7;  
           --accent-hover: #0369a1;
-          --bg: #f8fafc;      /* Crisp, clean canvas gray background */
+          --bg: #f8fafc;      
           --card-bg: #ffffff;
           --text-main: #334155;
           --text-heading: #0f172a;
@@ -33,7 +33,6 @@ export function renderLayout(title, content, isAdmin = false) {
           padding: 30px 15px;
         }
 
-        /* Standardized viewport constraint column preventing messy screen stretching */
         .container {
           max-width: 1200px;
           margin: 0 auto;
@@ -69,7 +68,6 @@ export function renderLayout(title, content, isAdmin = false) {
           letter-spacing: -0.025em;
         }
 
-        /* Uniform card distribution system */
         main { 
           display: grid; 
           grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); 
@@ -77,7 +75,6 @@ export function renderLayout(title, content, isAdmin = false) {
           margin-top: 25px; 
         }
         
-        /* Fixed structural grid cards to enforce total vertical box alignment */
         .card { 
           background: var(--card-bg); 
           padding: 24px; 
@@ -90,7 +87,6 @@ export function renderLayout(title, content, isAdmin = false) {
           height: 100%;
         }
 
-        /* Wraps upper textual context blocks uniformly */
         .card-body {
           display: flex;
           flex-direction: column;
@@ -120,7 +116,6 @@ export function renderLayout(title, content, isAdmin = false) {
           align-self: flex-start;
         }
 
-        /* Completely standardized structure for inputs and form text elements */
         input, select, textarea {
           width: 100%;
           padding: 10px 14px;
@@ -132,7 +127,6 @@ export function renderLayout(title, content, isAdmin = false) {
           transition: border-color 0.2s, box-shadow 0.2s;
         }
 
-        /* High Visibility Accessible Outline Focus Indicators complying with WCAG requirements */
         input:focus, button:focus, select:focus, textarea:focus { 
           outline: 3px solid #f97316; 
           border-color: transparent;
@@ -154,7 +148,6 @@ export function renderLayout(title, content, isAdmin = false) {
 
         button:hover { background: var(--accent-hover); }
 
-        /* Unified style guides for admin registers and layouts */
         table {
           width: 100%;
           background: var(--card-bg);
@@ -194,10 +187,18 @@ export function renderLayout(title, content, isAdmin = false) {
             years.forEach(year => {
               html += "<h5 style='margin: 10px 0 5px 0; font-size:0.9rem; font-weight:700;'>Level Year " + year + " Modules</h5><ul style='padding:0; list-style:none; display:flex; flex-direction:column; gap:8px;'>";
               modules.filter(m => m.year === year).forEach(m => {
+                
+                // FIXED STRUCTURAL LOOKUP: Evaluates if sharing string tracks exist and prints the shared badge live
+                let sharedBadgeHtml = "";
+                if (m.sharedWith && m.sharedWith.length > 0) {
+                  sharedBadgeHtml = \`<div style="margin-top:4px; font-size:0.75rem; background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:4px; display:inline-block; font-weight:600;">🔗 Shared with: \${m.sharedWith.join(', ')}</div>\`;
+                }
+
                 html += \`
                   <li style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
                     <strong style="font-size:0.9rem; color:var(--text-heading);">\${m.name}</strong><br>
-                    <small style="color: #64748b;">Leader: \${m.leader}</small>
+                    <small style="color: #64748b;">Leader: \${m.leader}</small><br>
+                    \${sharedBadgeHtml}
                   </li>
                 \`;
               });
@@ -214,7 +215,6 @@ export function renderLayout(title, content, isAdmin = false) {
       <div class="container">
         <nav>
           <a href="/">Home (Student View)</a> 
-          
           ${isAdmin ? `
             | <a href="/admin?auth=true" style="color: var(--accent); font-weight:700;">Admin Dashboard</a> 
             | <a href="/" style="color: var(--danger);">Logout</a>

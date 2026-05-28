@@ -3,7 +3,6 @@ import { kv } from "./db.js";
 import { renderLayout } from "./homeview.js";
 
 // ANTI-XSS INJECTION PROTECTION LAYER
-// Escapes raw HTML input characters to prevent malicious script injection attacks on my database
 function sanitizeInput(str) {
   return str.replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
 }
@@ -40,8 +39,6 @@ export async function showHome(ctx) {
     <main>
   `;
 
-  // Explicit, curated list of 3 distinct, high-fidelity technology photo IDs from Picsum
-  // 1. id/0: Laptop workspace layout, 2. id/60: Mainframe components, 3. id/160: Server connectivity
   const imagePool = ["0", "60", "160"];
   let imageCounter = 0;
 
@@ -57,7 +54,6 @@ export async function showHome(ctx) {
     if (p.published && matchesLevel && matchesKeyword) {
       foundAny = true;
       
-      // Select an image from our pool and step forward sequentially to give each course a unique picture
       const assignedImageId = imagePool[imageCounter % imagePool.length];
       imageCounter++;
 
@@ -104,22 +100,45 @@ export async function showHome(ctx) {
   ctx.response.body = renderLayout("Prospective Student Hub", listHtml);
 }
 
-// API Endpoint: Feeds specific courses background JSON module information arrays via client fetch
+// OVERHAULED SHARED BACKGROUND DATA API STREAM ENDPOINT
+// Resolves relational elements to map shared programme statuses live on the client view
 export async function getModulesApi(ctx) {
-  const progId = parseInt(ctx.params.progId || "0"); 
+  const currentProgId = parseInt(ctx.params.progId || "0"); 
   const moduleList = [];
   
+  // 1. Pull all degree records out of storage to handle name cross-referencing
+  const progsMap = {};
+  const progIter = kv.list({ prefix: ["programmes"] });
+  for await (const p of progIter) {
+    progsMap[p.value.id] = p.value.title;
+  }
+
+  // 2. Stream all module rows and evaluate shared array listings
   const iter = kv.list({ prefix: ["modules"] });
   for await (const res of iter) {
-    if (res.value.progId === progId) {
-      moduleList.push(res.value);
+    const m = res.value;
+    
+    // Check if this module belongs to the requesting program index
+    if (m.progIds && m.progIds.includes(currentProgId)) {
+      
+      // Compute other sharing pathways by dropping the active ID out of the view
+      const sharedWithTitles = m.progIds
+        .filter(id => id !== currentProgId)
+        .map(id => progsMap[id] || `Programme ID ${id}`);
+
+      moduleList.push({
+        id: m.id,
+        name: m.name,
+        year: m.year,
+        leader: m.leader,
+        sharedWith: sharedWithTitles // Send array strings straight to the frontend template
+      });
     }
   }
   ctx.response.headers.set("Content-Type", "application/json");
   ctx.response.body = moduleList; 
 }
 
-// Handles prospective user student signups
 export async function handleRegister(ctx) {
   const body = ctx.request.body({ type: "form" });
   const value = await body.value;
@@ -136,8 +155,6 @@ export async function handleRegister(ctx) {
   }
 }
 
-// WITHDRAW INTEREST PIPELINE CONTROLLER
-// Locates a precise composite key match and purges it directly from the storage track arrays
 export async function handleWithdraw(ctx) {
   const body = ctx.request.body({ type: "form" });
   const value = await body.value;

@@ -29,20 +29,26 @@ export async function showAdmin(ctx) {
       </div>
 
       <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--border);">
-        <h3>Add & Assign Module [Relational CRUD]</h3>
+        <h3>Add & Assign Module [Many-to-Many CRUD]</h3>
         <form action="/admin/create-module${authQuery}" method="POST" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
-          <label style="font-weight: 600; font-size: 0.9rem;">Target Parent Programme:</label>
-          <select name="progId">
+          
+          <label style="font-weight: 600; font-size: 0.9rem; display:block; margin-bottom: 4px;">Assign to Programmes (Select all that apply):</label>
+          <div style="background: var(--bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border); max-height: 100px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
   `;
 
   const optIter = kv.list({ prefix: ["programmes"] });
   for await (const res of optIter) {
-    adminHtml += `<option value="${res.value.id}">${res.value.title}</option>`;
+    adminHtml += `
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 500; cursor:pointer;">
+        <input type="checkbox" name="progIds" value="${res.value.id}" style="width: auto; cursor:pointer;"> ${res.value.title}
+      </label>
+    `;
   }
 
   adminHtml += `
-          </select>
-          <input type="text" name="name" placeholder="Module Title (e.g., Network Security)" required>
+          </div>
+
+          <input type="text" name="name" placeholder="Module Title (e.g., Systems Architecture)" required style="margin-top:5px;">
           <select name="year">
             <option value="1">Year level 1</option>
             <option value="2">Year level 2</option>
@@ -135,8 +141,6 @@ export async function showAdmin(ctx) {
   ctx.response.body = renderLayout("Admin Control Center", adminHtml, true);
 }
 
-// --- CONTROLLERS FOR CORE CRUD MUTATIONS ---
-
 export async function createProgramme(ctx) {
   const body = ctx.request.body({ type: "form" });
   const value = await body.value;
@@ -152,8 +156,6 @@ export async function createProgramme(ctx) {
   ctx.response.redirect("/admin?auth=true");
 }
 
-// NEW: CRUD UPDATE CONTROLLER
-// Patches changes directly to targeted system keys while leaving existing visibility flags untouched
 export async function updateProgramme(ctx) {
   const id = parseInt(ctx.params.id || "0");
   const body = ctx.request.body({ type: "form" });
@@ -163,23 +165,27 @@ export async function updateProgramme(ctx) {
   const res = await kv.get(["programmes", id]);
   if (res.value && newDesc) {
     const p = res.value;
-    p.description = newDesc; // Mutates description inline
-    await kv.set(["programmes", id], p); // Saves record back down safely
+    p.description = newDesc; 
+    await kv.set(["programmes", id], p); 
   }
   ctx.response.redirect("/admin?auth=true");
 }
 
+// OVERHAULED CREATE MODULE INTERACTION CONTROLLER
+// Persists array collections of program IDs to completely manage complex shared structures
 export async function createModule(ctx) {
   const body = ctx.request.body({ type: "form" });
   const value = await body.value;
-  const progId = parseInt(value.get("progId") || "0");
+  
+  // Collect all checked program IDs as an array of numerical elements
+  const progIds = value.getAll("progIds").map(id => parseInt(id)); 
   const name = sanitizeInput(value.get("name") || "");
   const year = parseInt(value.get("year") || "1");
   const leader = sanitizeInput(value.get("leader") || "");
 
-  if (progId && name && leader) {
+  if (progIds.length > 0 && name && leader) {
     const id = Date.now();
-    await kv.set(["modules", id], { id, progId, year, name, leader }); 
+    await kv.set(["modules", id], { id, progIds, year, name, leader }); 
   }
   ctx.response.redirect("/admin?auth=true");
 }
