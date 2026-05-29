@@ -1,22 +1,21 @@
 // server.js
 import { Application, Router } from "https://deno.land/x/oak@v12.6.1/mod.ts";
 import { showHome, handleRegister, handleWithdraw, getModulesApi } from "./controller.js";
-import { showAdmin, createProgramme, createModule, updateProgramme, toggleProgramme, deleteProgramme, deleteStudent, exportMailingList } from "./admin.js";
+import { showAdmin, createProgramme, createModule, updateProgramme, reassignModule, deleteModule, toggleProgramme, deleteProgramme, deleteStudent, exportMailingList } from "./admin.js";
 import { renderLayout } from "./homeview.js";
 
 const app = new Application();
 const router = new Router();
 
 // URL-BASED ARCHITECTURAL GATEKEEPER MIDDLEWARE
-// Intercepts administrative route contexts and explicitly verifies security query token states
 const authMiddleware = async (ctx, next) => {
   const url = new URL(ctx.request.url);
   const token = url.searchParams.get("auth");
 
   if (token === "true") {
-    await next(); // Permit step execution if the secret parameter is appended and valid
+    await next(); 
   } else {
-    ctx.response.status = 403; // Terminate request cycles with an HTTP Forbidden status if missing
+    ctx.response.status = 403; 
     ctx.response.body = "Access Denied: Administrators Only.";
   }
 };
@@ -25,20 +24,21 @@ const authMiddleware = async (ctx, next) => {
 router.get("/", showHome);
 router.get("/api/modules/:progId", getModulesApi); 
 router.post("/register-interest", handleRegister);
-router.post("/withdraw-interest", handleWithdraw); // User-led mailing list opt-out endpoint
+router.post("/withdraw-interest", handleWithdraw); 
 
 // --- SECURE COMPLIANT ADMINISTRATIVE OPERATIONAL CLUSTERS ---
 router.get("/admin", authMiddleware, showAdmin);
 router.post("/admin/create-programme", authMiddleware, createProgramme); 
-router.post("/admin/create-module", authMiddleware, createModule); // Relational module deployment route
-router.post("/admin/update-programme/:id", authMiddleware, updateProgramme); // Inline description modification route
+router.post("/admin/create-module", authMiddleware, createModule); 
+router.post("/admin/update-programme/:id", authMiddleware, updateProgramme); 
+router.post("/admin/reassign-module/:id", authMiddleware, authMiddleware, reassignModule); // NEW: Module leader update path
+router.post("/admin/delete-module/:id", authMiddleware, deleteModule); // NEW: Module cleanup route
 router.post("/admin/toggle-programme/:id", authMiddleware, toggleProgramme); 
 router.post("/admin/delete-programme/:id", authMiddleware, deleteProgramme); 
-router.post("/admin/delete-student/:id", authMiddleware, deleteStudent); // Database mailing register pruning endpoint
-router.get("/admin/export-mailing-list", authMiddleware, exportMailingList); // CSV Bulk marketing extraction engine node
+router.post("/admin/delete-student/:id", authMiddleware, deleteStudent); 
+router.get("/admin/export-mailing-list", authMiddleware, exportMailingList); 
 
 // --- HARDENED CREDENTIAL CHALLENGE VIEWS ---
-// Serves a secure login panel to validate system administrators
 router.get("/login", (ctx) => {
   const loginFormHtml = `
     <div style="background: white; padding: 30px; border-radius: 8px; max-width: 400px; margin: 40px auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -66,8 +66,6 @@ router.get("/login", (ctx) => {
   ctx.response.body = renderLayout("Admin Portal Login", loginFormHtml);
 });
 
-// POST ENDPOINT: CREDENTIAL VALIDATION
-// Processes form elements against system user configurations before granting tokenized entry states
 router.post("/login", async (ctx) => {
   const body = ctx.request.body({ type: "form" });
   const value = await body.value;
@@ -75,11 +73,10 @@ router.post("/login", async (ctx) => {
   const username = value.get("username");
   const password = value.get("password");
 
-  // Project identity parameters confirming access conditions are explicitly met
   if (username === "admin" && password === "dmu2026") {
-    ctx.response.redirect("/admin?auth=true"); // Redirect to dashboard with active token
+    ctx.response.redirect("/admin?auth=true"); 
   } else {
-    ctx.response.redirect("/login?error=true"); // Reject back to login with verification flag
+    ctx.response.redirect("/login?error=true"); 
   }
 });
 
